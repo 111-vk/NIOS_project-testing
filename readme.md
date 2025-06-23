@@ -105,10 +105,3 @@ Contributions are welcome! To contribute:
 2. Create a new branch for your feature or fix.
 3. Make your changes and commit them with clear messages.
 4. Push to your fork and open a pull request.
-
-For major changes, please open an issue first to discuss what you would like to change.
-
-
-
-## License
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
