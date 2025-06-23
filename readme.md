@@ -1,3 +1,4 @@
+## this is for testing purposes only, do not use this repository for any other purpose.
 # NIOS Web Documentation Site
 
 > **Note:** This is a combined repository for the [nios-students GitHub organization](https://github.com/nios-students), allowing you to run the documentation and resources locally for development, testing, and contribution.
@@ -39,8 +40,8 @@ This repository contains the source code and configuration for the NIOS Students
 ### Installation
 1. Clone the repository:
    ```bash
-   git clone <repo-url>
-   cd nios-web
+   git clone https://github.com/111-vk/NIOS_project-testing.git
+   cd NIOS_project-testing
    ```
 2. Install dependencies:
    ```bash
