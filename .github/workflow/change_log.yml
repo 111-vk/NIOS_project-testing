@@ -1,0 +1,104 @@
+name: AI-Powered Per-Commit Changelog (Gemini)
+
+on:
+  push:
+    branches: [main] # Change to your default branch if needed
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-changelog:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get new commits
+        id: new_commits
+        run: |
+          # Get the commit before this push
+          PREV_HEAD=$(git rev-parse HEAD^1 2>/dev/null || echo "")
+          if [ -z "$PREV_HEAD" ]; then
+            # First commit in repo or no previous HEAD
+            COMMITS=$(git log --pretty=format:"- %s (%an)" --no-merges)
+          else
+            COMMITS=$(git log $PREV_HEAD..HEAD --pretty=format:"- %s (%an)" --no-merges)
+          fi
+
+          if [ -z "$COMMITS" ]; then
+            echo "No new commits detected."
+            echo "commits=none" >> $GITHUB_OUTPUT
+          else
+            echo "commits<<EOF" >> $GITHUB_OUTPUT
+            echo "$COMMITS" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Generate AI summary using Google Gemini
+        if: steps.new_commits.outputs.commits != 'none'
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }} # Add your Gemini API key as a secret
+        run: |
+          COMMITS="${{ steps.new_commits.outputs.commits }}"
+          CURRENT_DATE=$(date +%Y-%m-%d)
+
+          # Prepare the prompt
+          PROMPT="You are a technical writer. Summarize the following recent git commit messages into a clear, professional, and concise English changelog entry. Group similar changes, use bullet points, and focus on what the end user would care about. Do not include author names or commit hashes.\n\nRecent changes:\n$COMMITS"
+
+          # Call Gemini API (using gemini-1.5-flash for speed and cost)
+          RESPONSE=$(curl -s "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=$GEMINI_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "contents": [{
+                "parts": [{
+                  "text": "'"$PROMPT"'"
+                }]
+              }],
+              "generationConfig": {
+                "temperature": 0.7,
+                "maxOutputTokens": 500
+              }
+            }' | jq -r '.candidates[0].content.parts[0].text // "No response from Gemini"')
+
+          # Write the new entry
+          echo "## Unreleased ($CURRENT_DATE)" > new_entry.md
+          echo "" >> new_entry.md
+          echo "$RESPONSE" >> new_entry.md
+          echo "" >> new_entry.md
+
+      - name: Update CHANGELOG.md
+        if: steps.new_commits.outputs.commits != 'none'
+        run: |
+          if [ ! -f CHANGELOG.md ]; then
+            echo "# Changelog" > CHANGELOG.md
+            echo "" >> CHANGELOG.md
+            echo "## Unreleased" >> CHANGELOG.md
+            echo "" >> CHANGELOG.md
+          fi
+
+          # Replace or add Unreleased section
+          if grep -q "^## Unreleased" CHANGELOG.md; then
+            awk '
+              /^## Unreleased/ {print; system("cat new_entry.md"); found=1; next}
+              found && /^\s*$/ {next}
+              found && /^##/ {found=0}
+              {print}
+            ' CHANGELOG.md > temp.md
+          else
+            cat new_entry.md CHANGELOG.md > temp.md
+          fi
+
+          mv temp.md CHANGELOG.md
+
+      - name: Commit and push updated CHANGELOG.md
+        if: steps.new_commits.outputs.commits != 'none'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md
+          git commit -m "docs: update changelog with latest changes [gemini-ai-generated]"
+          git push
