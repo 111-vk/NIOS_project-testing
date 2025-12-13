@@ -3,42 +3,45 @@ name: Update Changelog
 on:
   push:
     branches:
-      - main # Change to your default branch if different
+      - main
 
 permissions:
-  contents: write # Required to commit and push changes
+  contents: write
 
 jobs:
   update-changelog:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Full history for accurate previous state
+          fetch-depth: 0
 
-      - name: Get latest commit message and details
-        id: commit
+      - name: Generate changelog entry
         run: |
-          MESSAGE=$(git log -1 --pretty=%B | sed 's/"/\\"/g')  # Escape quotes if needed
           DATE=$(git log -1 --pretty=%F)
           SHA=$(git rev-parse --short HEAD)
           AUTHOR=$(git log -1 --pretty=%an)
 
-          echo "message=$MESSAGE" >> $GITHUB_OUTPUT
-          echo "date=$DATE" >> $GITHUB_OUTPUT
-          echo "sha=$SHA" >> $GITHUB_OUTPUT
-          echo "author=$AUTHOR" >> $GITHUB_OUTPUT
+          # Get commit message and collapse newlines
+          MESSAGE=$(git log -1 --pretty=%B | sed ':a;N;$!ba;s/\n/ /g')
+
+          printf "### %s (%s - %s)\n\n- %s\n\n" \
+            "$DATE" "$AUTHOR" "$SHA" "$MESSAGE" > NEW_ENTRY.md
 
       - name: Prepend entry to CHANGELOG.md
         run: |
-          ENTRY="### ${{ steps.commit.outputs.date }} (${{ steps.commit.outputs.author }} - ${{ steps.commit.outputs.sha }})\n\n- ${{ steps.commit.outputs.message }}\n\n$(cat CHANGELOG.md 2>/dev/null || echo '')"
-
-          echo "$ENTRY" > CHANGELOG.md
+          if [ -f CHANGELOG.md ]; then
+            cat NEW_ENTRY.md CHANGELOG.md > CHANGELOG.tmp
+            mv CHANGELOG.tmp CHANGELOG.md
+          else
+            mv NEW_ENTRY.md CHANGELOG.md
+          fi
 
       - name: Commit and push updated CHANGELOG.md
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "docs: update CHANGELOG.md with latest commit [skip ci]"
+          commit_message: "docs: update CHANGELOG.md [skip ci]"
           file_pattern: CHANGELOG.md
           branch: ${{ github.ref_name }}
