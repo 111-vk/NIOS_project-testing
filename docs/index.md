@@ -21,3 +21,5 @@ features:
     details: Stay updated with important dates and announcements for students
     link: /wiki/notifications/
 ---
+
+Welcome to NIOS Students — an unofficial collection of practical guides, checklists, and community links created by current and former NIOS learners. This site focuses on clear, actionable steps for admissions, exams, assignments (TMA), and related processes.
