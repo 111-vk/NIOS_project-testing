@@ -1,104 +1,75 @@
-name: AI-Powered Per-Commit Changelog (Gemini)
+name: Generate Changelog Entry with Gemini
 
 on:
   push:
-    branches: [main] # Change to your default branch if needed
-  workflow_dispatch:
+    branches:
+      - main # Change to your default branch if different
 
 permissions:
-  contents: write
+  contents: write # Required to push changes back to the repository
 
 jobs:
-  update-changelog:
+  generate-changelog:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0 # Needed for full git history if required later
 
-      - name: Get new commits
-        id: new_commits
+      - name: Get latest commit message
+        id: commit
         run: |
-          # Get the commit before this push
-          PREV_HEAD=$(git rev-parse HEAD^1 2>/dev/null || echo "")
-          if [ -z "$PREV_HEAD" ]; then
-            # First commit in repo or no previous HEAD
-            COMMITS=$(git log --pretty=format:"- %s (%an)" --no-merges)
-          else
-            COMMITS=$(git log $PREV_HEAD..HEAD --pretty=format:"- %s (%an)" --no-merges)
-          fi
+          MESSAGE=$(git log -1 --pretty=%B)
+          echo "message<<EOF" >> $GITHUB_OUTPUT
+          echo "$MESSAGE" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
-          if [ -z "$COMMITS" ]; then
-            echo "No new commits detected."
-            echo "commits=none" >> $GITHUB_OUTPUT
-          else
-            echo "commits<<EOF" >> $GITHUB_OUTPUT
-            echo "$COMMITS" >> $GITHUB_OUTPUT
-            echo "EOF" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Generate AI summary using Google Gemini
-        if: steps.new_commits.outputs.commits != 'none'
+      - name: Call Gemini API to generate changelog entry
+        id: gemini
         env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }} # Add your Gemini API key as a secret
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
-          COMMITS="${{ steps.new_commits.outputs.commits }}"
-          CURRENT_DATE=$(date +%Y-%m-%d)
+          COMMIT_MESSAGE="${{ steps.commit.outputs.message }}"
+          PROMPT="You are a helpful assistant that generates concise, professional changelog entries in Markdown format based on git commit messages. Format the entry as:\n\n- **Category:** Brief description\n\nUse appropriate categories like Features, Bug Fixes, Improvements, Documentation, etc. If unsure, use Other Changes.\n\nCommit message:\n$COMMIT_MESSAGE"
 
-          # Prepare the prompt
-          PROMPT="You are a technical writer. Summarize the following recent git commit messages into a clear, professional, and concise English changelog entry. Group similar changes, use bullet points, and focus on what the end user would care about. Do not include author names or commit hashes.\n\nRecent changes:\n$COMMITS"
-
-          # Call Gemini API (using gemini-1.5-flash for speed and cost)
-          RESPONSE=$(curl -s "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=$GEMINI_API_KEY" \
+          RESPONSE=$(curl -s -X POST \
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=$GEMINI_API_KEY" \
             -H "Content-Type: application/json" \
             -d '{
               "contents": [{
                 "parts": [{
                   "text": "'"$PROMPT"'"
                 }]
-              }],
-              "generationConfig": {
-                "temperature": 0.7,
-                "maxOutputTokens": 500
-              }
-            }' | jq -r '.candidates[0].content.parts[0].text // "No response from Gemini"')
+              }]
+            }')
 
-          # Write the new entry
-          echo "## Unreleased ($CURRENT_DATE)" > new_entry.md
-          echo "" >> new_entry.md
-          echo "$RESPONSE" >> new_entry.md
-          echo "" >> new_entry.md
+          # Extract the generated text
+          ENTRY=$(echo "$RESPONSE" | jq -r '.candidates[0].content.parts[0].text // empty')
+
+          if [ -z "$ENTRY" ]; then
+            echo "Error: No response from Gemini API"
+            echo "$RESPONSE"
+            exit 1
+          fi
+
+          echo "entry<<EOF" >> $GITHUB_OUTPUT
+          echo "$ENTRY" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Update CHANGELOG.md
-        if: steps.new_commits.outputs.commits != 'none'
         run: |
-          if [ ! -f CHANGELOG.md ]; then
-            echo "# Changelog" > CHANGELOG.md
-            echo "" >> CHANGELOG.md
-            echo "## Unreleased" >> CHANGELOG.md
-            echo "" >> CHANGELOG.md
-          fi
+          ENTRY="${{ steps.gemini.outputs.entry }}"
+          DATE=$(date '+%Y-%m-%d')
+          COMMIT_SHA=$(git rev-parse --short HEAD)
 
-          # Replace or add Unreleased section
-          if grep -q "^## Unreleased" CHANGELOG.md; then
-            awk '
-              /^## Unreleased/ {print; system("cat new_entry.md"); found=1; next}
-              found && /^\s*$/ {next}
-              found && /^##/ {found=0}
-              {print}
-            ' CHANGELOG.md > temp.md
-          else
-            cat new_entry.md CHANGELOG.md > temp.md
-          fi
+          NEW_ENTRY="## [$DATE] - Commit $COMMIT_SHA\n\n$ENTRY\n\n$(cat CHANGELOG.md 2>/dev/null || echo '')"
 
-          mv temp.md CHANGELOG.md
+          echo "$NEW_ENTRY" > CHANGELOG.md
 
       - name: Commit and push updated CHANGELOG.md
-        if: steps.new_commits.outputs.commits != 'none'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add CHANGELOG.md
-          git commit -m "docs: update changelog with latest changes [gemini-ai-generated]"
-          git push
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: update CHANGELOG.md with latest changes [skip ci]"
+          file_pattern: CHANGELOG.md
+          branch: ${{ github.ref_name }}
