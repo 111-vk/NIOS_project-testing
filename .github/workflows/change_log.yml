@@ -34,7 +34,7 @@ jobs:
           PROMPT="You are a helpful assistant that generates concise, professional changelog entries in Markdown format based on git commit messages. Format the entry as:\n\n- **Category:** Brief description\n\nUse appropriate categories like Features, Bug Fixes, Improvements, Documentation, etc. If unsure, use Other Changes.\n\nCommit message:\n$COMMIT_MESSAGE"
 
           RESPONSE=$(curl -s -X POST \
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=$GEMINI_API_KEY" \
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-latest:generateContent?key=$GEMINI_API_KEY" \
             -H "Content-Type: application/json" \
             -d '{
               "contents": [{
