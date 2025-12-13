@@ -1,3 +1,7 @@
+### 2025-12-13 12:31 (111-vk - 6da3b64)
+
+- date fix in changelog yml
+
 ### %F (111-vk - 1c338e8)
 
 - new changelog 
