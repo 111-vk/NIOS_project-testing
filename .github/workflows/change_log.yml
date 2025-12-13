@@ -20,15 +20,16 @@ jobs:
 
       - name: Generate changelog entry
         run: |
-          DATE=$(git log -1 --pretty=%F)
+          # Date + time in YYYY-MM-DD HH:MM format
+          DATETIME=$(git log -1 --pretty=format:%cd --date=format:'%Y-%m-%d %H:%M')
           SHA=$(git rev-parse --short HEAD)
-          AUTHOR=$(git log -1 --pretty=%an)
+          AUTHOR=$(git log -1 --pretty=format:%an)
 
-          # Get commit message and collapse newlines
-          MESSAGE=$(git log -1 --pretty=%B | sed ':a;N;$!ba;s/\n/ /g')
+          # Collapse multiline commit messages
+          MESSAGE=$(git log -1 --pretty=format:%B | sed ':a;N;$!ba;s/\n/ /g')
 
           printf "### %s (%s - %s)\n\n- %s\n\n" \
-            "$DATE" "$AUTHOR" "$SHA" "$MESSAGE" > NEW_ENTRY.md
+            "$DATETIME" "$AUTHOR" "$SHA" "$MESSAGE" > NEW_ENTRY.md
 
       - name: Prepend entry to CHANGELOG.md
         run: |
