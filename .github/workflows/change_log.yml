@@ -36,6 +36,7 @@ jobs:
           if [ -f CHANGELOG.md ]; then
             cat NEW_ENTRY.md CHANGELOG.md > CHANGELOG.tmp
             mv CHANGELOG.tmp CHANGELOG.md
+            rm NEW_ENTRY.md
           else
             mv NEW_ENTRY.md CHANGELOG.md
           fi
