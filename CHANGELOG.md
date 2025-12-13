@@ -1,4 +1,4 @@
-# Changelog
+## [2025-12-13] - Commit 2e5d86e\n\n- **Improvements:** Updated Gemini API version.\n\n# Changelog
 
 ## Unreleased
 ## Unreleased (2025-12-13)
