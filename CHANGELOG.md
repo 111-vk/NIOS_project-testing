@@ -1,3 +1,7 @@
+### 2025-12-13 13:15 (111-vk - 73e1ec6)
+
+- chore(ci): remove temporary NEW_ENTRY.md after changelog prepend  Add a cleanup step to .github/workflows/change_log.yml to remove NEW_ENTRY.md after it is prepended to CHANGELOG.md, preventing leftover temporary files.
+
 ### 2025-12-13 13:03 (111-vk - 8a8f527)
 
 - docs(index): polish homepage copy and quick links  Improve the docs/index.md home page by refining the hero text, clarifying feature descriptions, and adding a concise welcome section with Quick Links. This makes the landing page more professional and improves discoverability for new visitors.
