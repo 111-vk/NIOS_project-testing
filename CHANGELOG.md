@@ -1,3 +1,7 @@
+### 2026-01-13 19:20 (111-vk - e77aff1)
+
+- Enhance Discord notification workflow  Updated Discord notification workflow to include main branch and improved commit message handling.
+
 ### 2026-01-13 19:15 (111-vk - 7a87559)
 
 - Enhance Discord notifications in workflow  Updated Discord notification workflow to include more detailed messages for push and non-push events.
