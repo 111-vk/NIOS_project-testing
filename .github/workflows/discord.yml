@@ -57,6 +57,7 @@ jobs:
             • Run ID: [${{ github.run_id }}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
 
             **Timestamp:** ${{ github.event.head_commit && github.event.head_commit.timestamp || github.event.repository && github.event.repository.pushed_at || 'N/A' }}
+            **Total Commits:** `${{ github.event.commits && github.event.commits.length || 1 }}`
 
             _Automated notification sent via GitHub Actions_
 
@@ -87,5 +88,6 @@ jobs:
             • Run ID: [${{ github.run_id }}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
 
             **Timestamp:** ${{ github.event.created_at || (github.event.pull_request && github.event.pull_request.created_at) || (github.event.issue && github.event.issue.created_at) || 'N/A' }}
+            **Total Commits:** `${{ github.event.commits && github.event.commits.length || 1 }}`
 
             _This message was automatically generated_
