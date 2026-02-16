@@ -36,7 +36,9 @@ jobs:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
         with:
           args: |
-            🚀 **NIOS UNOFFICIAL — Repository Update**
+            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            **NIOS UNOFFICIAL — Repository Update**
+            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
             **Repository:** ${{ github.repository }}
             **Event:** Push
@@ -59,7 +61,9 @@ jobs:
             **Timestamp:** ${{ github.event.head_commit && github.event.head_commit.timestamp || github.event.repository && github.event.repository.pushed_at || 'N/A' }}
             **Total Commits:** `${{ github.event.commits && github.event.commits.length || 1 }}`
 
+            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
             _Automated notification sent via GitHub Actions_
+            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
       - name: Notify Discord (Other Events)
         if: github.event_name != 'push'
@@ -68,8 +72,9 @@ jobs:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
         with:
           args: |
-            🔔 <@&1116740147275382874>
+            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
             **Repository Activity Alert**
+            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
             **Repository:** ${{ github.repository }}
             **Event Type:** ${{ github.event_name }}
@@ -90,4 +95,6 @@ jobs:
             **Timestamp:** ${{ github.event.created_at || (github.event.pull_request && github.event.pull_request.created_at) || (github.event.issue && github.event.issue.created_at) || 'N/A' }}
             **Total Commits:** `${{ github.event.commits && github.event.commits.length || 1 }}`
 
+            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
             _This message was automatically generated_
+            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
